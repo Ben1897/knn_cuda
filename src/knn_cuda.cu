@@ -9,6 +9,7 @@
 
 // Includes
 #include <cstdio>
+#include <stdlib.h>
 #include "cuda.h"
 
 // Constants used by the program
@@ -128,8 +129,12 @@ __global__ void cuComputeDistanceGlobal( float* A, int wA,
     // Compute the difference between the two matrixes; each thread computes one element of the block sub-matrix
     if (cond2 && cond1){
       for (int k = 0; k < BLOCK_DIM; ++k){
-        tmp = shared_A[k][ty] - shared_B[k][tx];
-        ssd += tmp*tmp;
+        /* tmp = shared_A[k][ty] - shared_B[k][tx]; */
+        /* ssd += tmp*tmp; */
+        tmp = abs(shared_A[k][ty] - shared_B[k][tx]);
+        if (tmp > ssd){
+          ssd = tmp;
+        }
       }
     }
 
@@ -406,7 +411,7 @@ void knn_cuda(float* ref_host, int ref_width, float* query_host,
       query_width, ref_width, k);
 
   // Kernel 3: Compute square root of k first elements
-  cuParallelSqrt<<<g_k_16x16,t_k_16x16>>>(dist_dev, query_width, k);
+  /* cuParallelSqrt<<<g_k_16x16,t_k_16x16>>>(dist_dev, query_width, k); */
 
   // Memory copy of output from device to host
   cudaMemcpy(&dist_host[0], dist_dev,
@@ -445,7 +450,7 @@ int main(void){
   dist   = (float *) malloc(query_nb * k * sizeof(float));
   ind    = (int *)   malloc(query_nb * k * sizeof(float));
 
-  // Init 
+  // Init
   srand(time(NULL));
   for (i=0 ; i<ref_nb   * dim ; i++) ref[i]    = (float)rand() / (float)RAND_MAX;
   for (i=0 ; i<query_nb * dim ; i++) query[i]  = (float)rand() / (float)RAND_MAX;
